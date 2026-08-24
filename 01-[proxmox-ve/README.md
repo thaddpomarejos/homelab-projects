@@ -1,243 +1,158 @@
-# AdGuard Home DNS Server
+# Proxmox VE Homelab Server
 
-**Date:** August 22, 2026  
+**Date:** August 20, 2026  
 **Status:** Completed
 
 ## Goal
 
-Install and configure AdGuard Home in my Proxmox homelab to create a DNS server that can block ads and trackers on my personal devices.
+Installing Proxmox on my **MINISFORUM UM870 Slim** and turning it into a VM server.
 
 ---
 
 ## Hardware Used
 
 - MINISFORUM UM870 Slim
-- UniFi Flex 2.5G Switch
-- Main Windows PC
-- Ethernet connection
-
-## Software / Technologies Used
-
-- Proxmox VE
-- LXC containers
-- Debian 12
-- AdGuard Home
-- Windows networking tools
+- USB flash drive
+- UniFi Flex 2.5G switch
+- Main PC
 
 ---
 
 # Steps for Installation
 
-## 1. Created a Debian LXC Container
+## 1. Downloaded Proxmox VE
 
-- Downloaded a Debian 12 LXC template through Proxmox.
-- Selected **Create CT** to create a new Linux container.
-- Created the container specifically for AdGuard Home.
+- Downloaded the Proxmox VE ISO from their website.
+- Flashed it onto the USB drive.
+
+## 2. Configured BIOS
+
+- Entered BIOS by holding the **Delete** key and going through the settings.
+- Disabled Secure Boot.
+- Selected the USB flash drive as the boot device.
+
+## 3. Installed Proxmox VE
+
+- Installed Proxmox VE onto the NVMe SSD.
+- Configured the IP so I could connect to Proxmox from another computer.
 
 ---
 
-## 2. Allocated Resources
+# Issues and Resolutions
 
-Configured the AdGuard container with:
+## Issue 1 — PC Booted Into Windows Instead of Proxmox
 
-- **Storage:** 8 GB
-- **CPU:** 1 Core
-- **Memory:** 512 MB
+I tried to boot into the Proxmox VE installer, but the PC booted into Windows instead of Proxmox.
+
+### Troubleshooting the Issue
+
+I checked the USB boot device, selected the USB flash drive to be the main boot drive, disabled Secure Boot, recreated the installation media on the USB drive, and then tried to boot into Proxmox again.
+
+The issue that I encountered while trying to install Proxmox was that I accidentally downloaded an **ARM file instead of the correct ISO file**, which made the installation process harder.
+
+It was the wrong image file for my system and wasn't the correct installer for my PC.
 
 ---
 
-## 3. Configured Networking
+## Issue 2 — Reformatting the USB Drive
 
-Assigned the AdGuard container a static IPv4 address so that client devices would always know where to find the DNS server.
+I also went into **DiskPart** using Windows Command Prompt and reformatted the USB drive because it wasn't working correctly after I flashed the wrong ARM file onto it.
 
-### Network Layout
+### Steps I Used in DiskPart
+
+I opened Command Prompt using:
 
 ```text
-Gateway
-   │
-   ▼
-UniFi 2.5G Switch
-   │
-   ├── Main PC
-   │
-   └── Proxmox
-          │
-          ▼
-      LXC Container
-          │
-          ▼
-      AdGuard Home
+Win + R
 ```
 
----
-
-## 4. Tested Network Connectivity
-
-Started the container to make sure it was running.
-
-Before installing AdGuard Home, I tested the connectivity between the LXC container and my home network.
-
-I tested connectivity to the gateway by using:
-
-```bash
-ping -c 4 <gateway-ip>
-```
-
-I also tested internet connectivity and DNS by using:
-
-```bash
-ping -c 4 google.com
-```
-
-Both tests were successful.
-
----
-
-## 5. Updated Debian
-
-Inside the container, I updated Debian using:
-
-```bash
-apt update
-```
-
-I also made sure `curl` was installed so I could retrieve the AdGuard Home installation script.
-
----
-
-## 6. Installed AdGuard Home
-
-I ran the `curl` installation script to install AdGuard Home inside the Debian 12 LXC container.
-
----
-
-## 7. Configured AdGuard Home
-
-I opened the AdGuard Home setup page by entering the container's IP address into my web browser:
-
-```text
-http://<AdGuard-IP>
-```
-
-I completed the installation and configured:
-
-- Admin web interface
-- DNS server
-- Administration account
-- DNS filtering
-
-After completing the configuration, the AdGuard Home DNS server was up and running using the container's static IP address.
-
----
-
-## 8. Configured My Main PC
-
-I changed the DNS configuration on my Windows Ethernet adapter and set the **Preferred DNS server** to the AdGuard Home IP address.
-
-This caused Windows to send DNS requests to my AdGuard Home server.
-
----
-
-# Issues and Troubleshooting
-
-## Windows Was Using an IPv6 DNS Server
-
-After changing the Preferred DNS server to the AdGuard IPv4 address, Windows was still prioritizing an IPv6 DNS server instead of my AdGuard Home IPv4 address.
-
-I ran:
+I then opened DiskPart and listed all of the disks/drives:
 
 ```cmd
-nslookup google.com
+diskpart
+list disk
 ```
 
-The results showed that the DNS request was going to an IPv6 DNS server instead of AdGuard Home.
-
-I checked the network configuration using:
+My USB drive was listed as **Disk 2**, so I selected Disk 2 using:
 
 ```cmd
-ipconfig /all
+select disk 2
 ```
 
-This showed that my PC had both the AdGuard IPv4 DNS address and an IPv6 DNS server configured.
-
-I then tested AdGuard Home directly by using:
+I used the following command to verify that I selected the correct disk:
 
 ```cmd
-nslookup google.com <AdGuard-IP>
+detail disk
 ```
 
-This confirmed that AdGuard Home itself was working properly.
-
-To troubleshoot the issue, I temporarily disabled IPv6 on my Ethernet adapter so Windows would use the configured IPv4 DNS server.
-
-I then cleared the DNS cache using:
+I erased the partitions using:
 
 ```cmd
-ipconfig /flushdns
+clean
 ```
 
-After that, I ran:
+I created a new partition using:
 
 ```cmd
-nslookup google.com
+create partition primary
 ```
 
-The result showed that my computer was now using the AdGuard Home DNS server and was no longer showing the other DNS server.
+I formatted the drive as exFAT using:
+
+```cmd
+format fs=exfat quick
+```
+
+I assigned the USB drive a new drive letter:
+
+```cmd
+assign letter=D
+```
+
+Then I exited DiskPart:
+
+```cmd
+exit
+```
+
+> **Note:** The `clean` command erases the partition information on the selected disk, so I made sure I selected the correct USB drive before using it.
 
 ---
 
 # Results
 
-AdGuard Home was successfully installed in my Debian 12 LXC container on Proxmox.
+Proxmox VE was successfully installed.
 
-I currently have **two PCs running through my AdGuard Home DNS server**.
-
-I can monitor DNS requests through the AdGuard Home dashboard and see requests being processed and blocked.
-
-AdGuard Home is also separated from the Proxmox host by running inside its own LXC container.
+I set up the management interface with an IP address and connected to it through my main PC.
 
 ---
 
 # Verification
 
-I verified that AdGuard Home was working by:
+I was able to open the **Proxmox VE web interface** from my main PC.
 
-- Confirming that the LXC container was running.
-- Testing connectivity to my gateway.
-- Testing internet connectivity.
-- Opening the AdGuard Home web interface.
-- Using `nslookup` to test DNS resolution.
-- Using `nslookup` to directly query the AdGuard Home server.
-- Checking the AdGuard Home dashboard for DNS requests.
-- Confirming that two PCs could use AdGuard Home for DNS.
+This confirmed that the Proxmox server was installed and accessible over my network.
 
 ---
 
 # What I Learned
 
-Through this project, I gained experience with:
+I learned how to create a bootable USB installation drive. I had some prior knowledge of this from building PCs.
 
-- Proxmox VE
-- Linux LXC containers
-- Debian administration
-- Installing and managing Linux services
-- Static IPv4 addressing
-- Basic subnet/CIDR notation
-- Default gateways
-- DNS servers
-- Linux package management with `apt`
-- Using `curl`
-- Windows network adapter configuration
-- `ipconfig`
-- `nslookup`
-- `ping`
-- DNS cache flushing
-- Client/server networking
-- Network troubleshooting
-- Verifying services using logs
+I also got more experience using **BIOS/UEFI**, which I had some previous experience with from building PCs.
 
-One of the main things I learned from this project was **how to troubleshoot a service**.
+Through this project, I practiced:
 
-When AdGuard Home did not appear to be working correctly, I used different networking commands to determine whether the problem was with AdGuard itself or with my Windows DNS configuration.
+- Creating bootable USB installation media
+- Using BIOS/UEFI
+- Changing boot devices
+- Disabling Secure Boot
+- Learning Secure Boot basics
+- Using Windows DiskPart
+- Reformatting a USB drive
+- Installing Proxmox VE
+- Configuring the Proxmox management IP
+- Accessing a server through another computer
+- Troubleshooting USB boot problems
 
-By directly testing the AdGuard server with `nslookup`, I was able to confirm that the server was working and narrow the problem down to the client-side DNS configuration.
+One of the main things I learned was how to troubleshoot installation and USB boot problems instead of starting over without knowing what caused the issue.
