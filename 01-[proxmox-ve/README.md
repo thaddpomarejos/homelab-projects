@@ -115,9 +115,7 @@ Then I exited DiskPart:
 exit
 ```
 
-> **Note:** The `clean` command erases the partition information on the selected disk, so I made sure I selected the correct USB drive before using it.
 
----
 
 # Results
 
