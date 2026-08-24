@@ -1,7 +1,7 @@
 # Proxmox VE Homelab Server
 
 **Date:** August 20, 2026  
-**Status:** ✅ Completed
+**Status:** Completed.
 
 ## Project Goal
 
