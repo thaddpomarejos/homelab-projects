@@ -5,9 +5,9 @@
 
 ## Project Goal
 
-Install and configure **AdGuard Home** in my Proxmox homelab to create a DNS server that can block ads and trackers on my personal devices.
+Install and configure **AdGuard Home** in the Proxmox homelab to create a DNS server that can block ads and trackers on personal devices.
 
-This project gave me hands-on experience with DNS, Linux containers, static IPv4 addressing, Linux administration, and network troubleshooting.
+This project provided hands-on experience with DNS, Linux containers, static IPv4 addressing, Linux administration, and network troubleshooting.
 
 ---
 
@@ -30,9 +30,9 @@ This project gave me hands-on experience with DNS, Linux containers, static IPv4
 
 ## Network Topology
 
-My network for this project is structured approximately as:
+The network for this project is structured approximately as:
 
-```text
+```text id="j91d2k"
 Internet
    │
    ▼
@@ -60,35 +60,35 @@ AdGuard Home runs inside its own Debian 12 LXC container, keeping the DNS servic
 
 ## 1. Created a Debian LXC Container
 
-I downloaded a **Debian 12 LXC template** through Proxmox.
+Downloaded a **Debian 12 LXC template** through Proxmox.
 
-I then selected **Create CT** and created a dedicated Linux container for the AdGuard Home server.
+Then selected **Create CT** and created a dedicated Linux container for the AdGuard Home server.
 
 ---
 
 ## 2. Allocated Resources
 
-I configured the AdGuard container with:
+Configured the AdGuard container with:
 
 | Resource | Allocation |
-|---|---:|
-| Storage | 8 GB |
-| CPU | 1 Core |
-| Memory | 512 MB |
+| -------- | ---------: |
+| Storage  |       8 GB |
+| CPU      |     1 Core |
+| Memory   |     512 MB |
 
-These resources were sufficient for my current AdGuard Home deployment.
+These resources were sufficient for the current AdGuard Home deployment.
 
 ---
 
 ## 3. Configured Networking
 
-I assigned the AdGuard container a **static IPv4 address**.
+Assigned the AdGuard container a **static IPv4 address**.
 
 Using a static address is important because client devices need a consistent IP address to use AdGuard Home as their DNS server.
 
 The basic DNS path is:
 
-```text
+```text id="dx4xg9"
 Client Device
      │
      │ DNS Request
@@ -105,41 +105,41 @@ AdGuard can then evaluate DNS requests against its configured filtering rules.
 
 ## 4. Tested Network Connectivity
 
-Before installing AdGuard Home, I started the container and verified that it could communicate with my home network.
+Before installing AdGuard Home, started the container and verified that it could communicate with the home network.
 
-I tested connectivity to my default gateway:
+Tested connectivity to the default gateway:
 
-```bash
+```bash id="pt7k69"
 ping -c 4 <gateway-ip>
 ```
 
-I then tested internet connectivity and DNS resolution:
+Then tested internet connectivity and DNS resolution:
 
-```bash
+```bash id="2itjdb"
 ping -c 4 google.com
 ```
 
 Both tests were successful.
 
-This confirmed that the container had working network connectivity before I continued with the AdGuard installation.
+This confirmed that the container had working network connectivity before continuing with the AdGuard installation.
 
 ---
 
 ## 5. Updated Debian
 
-Inside the container, I updated the Debian package lists:
+Inside the container, updated the Debian package lists:
 
-```bash
+```bash id="2sqqqg"
 apt update
 ```
 
-I also made sure that `curl` was installed so that I could retrieve the AdGuard Home installation script.
+Also made sure that `curl` was installed so that the AdGuard Home installation script could be retrieved.
 
 ---
 
 ## 6. Installed AdGuard Home
 
-I retrieved and ran the AdGuard Home installation script using `curl`.
+Retrieved and ran the AdGuard Home installation script using `curl`.
 
 After installation, the AdGuard Home service was running inside the Debian LXC container.
 
@@ -147,13 +147,13 @@ After installation, the AdGuard Home service was running inside the Debian LXC c
 
 ## 7. Configured AdGuard Home
 
-I opened the AdGuard Home web interface from my main PC using the container's IP address.
+Opened the AdGuard Home web interface from the main PC using the container's IP address.
 
-```text
+```text id="y52pmq"
 http://<adguard-ip>
 ```
 
-I completed the initial setup and configured:
+Completed the initial setup and configured:
 
 - Administration account
 - Web administration interface
@@ -165,13 +165,13 @@ Once configuration was complete, the AdGuard Home DNS server was operational.
 
 ---
 
-## 8. Configured My Windows PC
+## 8. Configured Windows PC
 
-To make my Windows PC use AdGuard Home, I manually changed the DNS configuration on the Windows Ethernet adapter.
+To make the Windows PC use AdGuard Home, manually changed the DNS configuration on the Windows Ethernet adapter.
 
-I set:
+Set:
 
-```text
+```text id="vv4lyc"
 Preferred DNS Server: <AdGuard-IP>
 ```
 
@@ -183,29 +183,29 @@ This directed DNS requests from the computer to the AdGuard Home server.
 
 ## Windows Was Using IPv6 DNS Instead of AdGuard
 
-After setting the Windows preferred DNS server to the AdGuard Home IPv4 address, I noticed that DNS requests were not always going through AdGuard.
+After setting the Windows preferred DNS server to the AdGuard Home IPv4 address, noticed that DNS requests were not always going through AdGuard.
 
-I tested DNS resolution with:
+Tested DNS resolution with:
 
-```cmd
+```cmd id="e1r6a8"
 nslookup google.com
 ```
 
-The results showed that Windows was using an **IPv6 DNS server** instead of the IPv4 address assigned to my AdGuard Home server.
+The results showed that Windows was using an **IPv6 DNS server** instead of the IPv4 address assigned to the AdGuard Home server.
 
 ### Investigating the Problem
 
-I checked the computer's complete network configuration using:
+Checked the computer's complete network configuration using:
 
-```cmd
+```cmd id="wh7vpd"
 ipconfig /all
 ```
 
-This showed that my computer had both the AdGuard IPv4 DNS address and an IPv6 DNS server available.
+This showed that the computer had both the AdGuard IPv4 DNS address and an IPv6 DNS server available.
 
-I then queried AdGuard Home directly:
+Then queried AdGuard Home directly:
 
-```cmd
+```cmd id="q8tb5v"
 nslookup google.com <AdGuard-IP>
 ```
 
@@ -215,27 +215,27 @@ This was an important troubleshooting step because it confirmed that **AdGuard H
 
 ### Testing a Solution
 
-As a troubleshooting test, I disabled IPv6 on the Windows Ethernet adapter so Windows would use the configured IPv4 DNS server.
+As a troubleshooting test, disabled IPv6 on the Windows Ethernet adapter so Windows would use the configured IPv4 DNS server.
 
-I then cleared the Windows DNS resolver cache:
+Then cleared the Windows DNS resolver cache:
 
-```cmd
+```cmd id="73dm13"
 ipconfig /flushdns
 ```
 
-Finally, I tested DNS resolution again:
+Finally, tested DNS resolution again:
 
-```cmd
+```cmd id="2r4wwm"
 nslookup google.com
 ```
 
-This time the results showed that the DNS request was being handled by my AdGuard Home server.
+This time the results showed that the DNS request was being handled by the AdGuard Home server.
 
 ---
 
 # Verification
 
-I verified the completed deployment by:
+Verified the completed deployment by:
 
 - Confirming the Debian LXC container was running.
 - Confirming the container could reach the network gateway.
@@ -253,15 +253,15 @@ I verified the completed deployment by:
 
 AdGuard Home was successfully deployed inside a **Debian 12 LXC container running on Proxmox VE**.
 
-I currently have **two Windows PCs using the AdGuard Home server for DNS filtering**.
+Currently have **two Windows PCs using the AdGuard Home server for DNS filtering**.
 
-I can monitor DNS queries and filtering activity through the AdGuard Home web interface while keeping the DNS service isolated from the Proxmox host in its own LXC container.
+DNS queries and filtering activity can be monitored through the AdGuard Home web interface while keeping the DNS service isolated from the Proxmox host in its own LXC container.
 
 ---
 
 # Skills Practiced
 
-This project gave me hands-on experience with:
+This project provided hands-on experience with:
 
 - Proxmox VE
 - Linux LXC containers
@@ -285,21 +285,21 @@ This project gave me hands-on experience with:
 
 ---
 
-# What I Learned
+# What Was Learned
 
-One of the biggest things I learned from this project was how to **troubleshoot a network service instead of assuming the service itself was broken**.
+One of the biggest things learned from this project was how to **troubleshoot a network service instead of assuming the service itself was broken**.
 
-When AdGuard did not initially appear to be handling my computer's DNS requests, I worked through the problem by checking the Windows network configuration, testing DNS resolution, querying the AdGuard server directly, and comparing the results.
+When AdGuard did not initially appear to be handling the computer's DNS requests, worked through the problem by checking the Windows network configuration, testing DNS resolution, querying the AdGuard server directly, and comparing the results.
 
-The direct `nslookup` test showed that AdGuard Home was functioning correctly and helped me narrow the issue down to the client-side DNS configuration.
+The direct `nslookup` test showed that AdGuard Home was functioning correctly and helped narrow the issue down to the client-side DNS configuration.
 
-This project helped me better understand how **DNS clients, DNS servers, IPv4/IPv6, and network configuration work together**.
+This project helped provide a better understanding of how **DNS clients, DNS servers, IPv4/IPv6, and network configuration work together**.
 
 ---
 
 ## Future Improvements
 
-As I continue developing my homelab, I plan to:
+Future improvements for the homelab include:
 
 - Configure additional devices to use AdGuard Home.
 - Learn more about IPv6 DNS configuration.
