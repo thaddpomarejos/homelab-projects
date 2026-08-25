@@ -50,13 +50,13 @@ Checked the USB boot device, selected the USB flash drive to be the main boot dr
 
 The issue encountered while trying to install Proxmox was accidentally downloading an **ARM file instead of the correct ISO file**, which made the installation process harder.
 
-It was the wrong image file for the system and wasn't the correct installer for the PC.
+The file was the wrong type, used **ARM** file rather than the **ISO** file, wasn't the correct installer image file for the PC.
 
 ---
 
 ## Issue 2 — Reformatting the USB Drive
 
-Also went into **DiskPart** using Windows Command Prompt and reformatted the USB drive because it wasn't working correctly after flashing the wrong ARM file onto it.
+**DISKPART**
 
 ### Steps Used in DiskPart
 
@@ -66,7 +66,7 @@ Opened Command Prompt using:
 Win + R
 ```
 
-Then opened DiskPart and listed all of the disks/drives:
+Opened DiskPart and listed all of the disks/drives:
 
 ```cmd
 diskpart
@@ -153,4 +153,4 @@ Through this project, practiced:
 - Accessing a server through another computer
 - Troubleshooting USB boot problems
 
-One of the main things learned was how to troubleshoot installation and USB boot problems instead of starting over without knowing what caused the issue.
+
