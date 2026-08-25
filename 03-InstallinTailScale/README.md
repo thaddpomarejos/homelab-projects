@@ -4,19 +4,15 @@
 
 Set up **Tailscale inside a Proxmox LXC container** to securely access the homelab remotely.
 
-The container was also configured as a **subnet router** so devices connected through Tailscale could reach the home network on:
-
-`192.168.1.0/24`
+The container was also configured as a **subnet router** so devices connected through Tailscale could reach the home network.
 
 ## Environment
 
 - Proxmox VE
 - Debian LXC container
-- Container ID: `102`
-- Home network: `192.168.1.0/24`
-- Gateway: `192.168.1.1`
 - Tailscale
 - Gaming PC used to manage Proxmox
+- Home LAN connected through the Proxmox bridge
 
 ## Network Layout
 
@@ -25,10 +21,10 @@ Remote Phone / Laptop
         │
         │ Tailscale VPN
         ▼
-CT 102 - Tailscale
+Tailscale LXC
         │
         ▼
-192.168.1.0/24 Home Network
+Home Network
         │
         ├── Proxmox
         ├── AdGuard
@@ -46,20 +42,20 @@ Created a new Debian LXC container in Proxmox for Tailscale.
 
 ```text
 Bridge:        vmbr0
-IPv4/CIDR:     192.168.1.60/24
-Gateway:       192.168.1.1
-DNS Server:    192.168.1.1
+IPv4/CIDR:     Static address configured
+Gateway:       Home router
+DNS Server:    Home router
 VLAN Tag:      None
 Firewall:      Disabled
 ```
 
-Before using `192.168.1.60`, tested the address from the main PC:
+Before assigning the static address, tested it from the main PC to make sure it was likely available.
 
 ```bash
-ping 192.168.1.60
+ping <container-ip>
 ```
 
-The request timed out, showing that the address was likely available.
+The request timed out, showing that the address was likely unused.
 
 ---
 
@@ -121,16 +117,16 @@ This showed that the Tailscale daemon was installed but could not start correctl
 
 Tailscale requires access to the Linux TUN network device.
 
-Stopped CT 102 from the Proxmox host:
+Stopped the Tailscale container from the Proxmox host:
 
 ```bash
-pct stop 102
+pct stop <CT-ID>
 ```
 
 Opened the container configuration:
 
 ```bash
-nano /etc/pve/lxc/102.conf
+nano /etc/pve/lxc/<CT-ID>.conf
 ```
 
 Added:
@@ -147,7 +143,7 @@ This gives the LXC container access to `/dev/net/tun`, which Tailscale needs to 
 
 ## Step 6 - Fix the LXC Configuration
 
-When trying to start CT 102, Proxmox returned:
+When trying to start the container, Proxmox returned:
 
 ```text
 unable to parse value of 'features'
@@ -167,14 +163,14 @@ Made sure only one `features:` line existed in the configuration.
 Started the container again:
 
 ```bash
-pct start 102
+pct start <CT-ID>
 ```
 
 ---
 
 ## Step 7 - Start the Tailscale Service
 
-Inside CT 102:
+Inside the container:
 
 ```bash
 systemctl restart tailscaled
@@ -214,14 +210,6 @@ Checked the Tailscale IPv4 address:
 tailscale ip -4
 ```
 
-The container received an address in the:
-
-```text
-100.x.x.x
-```
-
-range.
-
 Normal ping tests may time out depending on firewall or ICMP settings, so Tailscale's built-in ping command can also be used:
 
 ```bash
@@ -232,7 +220,7 @@ tailscale ping <tailscale-ip>
 
 ## Step 9 - Enable IP Forwarding
 
-To make CT 102 work as a subnet router, IPv4 forwarding had to be enabled.
+To make the Tailscale container work as a subnet router, IPv4 forwarding had to be enabled.
 
 Ran:
 
@@ -247,21 +235,15 @@ This allows the Linux container to forward network traffic between Tailscale and
 
 ## Step 10 - Advertise the Home Network
 
-The home network uses:
-
-```text
-192.168.1.0/24
-```
-
-Advertised that subnet through Tailscale:
+Advertised the home subnet through Tailscale:
 
 ```bash
-tailscale up --advertise-routes=192.168.1.0/24
+tailscale up --advertise-routes=<home-subnet>
 ```
 
 Opened the Tailscale admin console and approved the advertised route.
 
-CT 102 now works as a **Tailscale subnet router**.
+The container now works as a **Tailscale subnet router**.
 
 ---
 
@@ -271,8 +253,6 @@ Without subnet routing, Tailscale can only directly reach devices running Tailsc
 
 With the subnet router enabled, remote devices can also reach other devices on the home network.
 
-Example:
-
 ```text
 Remote Laptop
       │
@@ -280,11 +260,11 @@ Remote Laptop
 Tailscale
       │
       ▼
-CT 102
+Tailscale LXC
       │
-      ├── 192.168.1.x Proxmox
-      ├── 192.168.1.x AdGuard
-      ├── 192.168.1.x Jellyfin
+      ├── Proxmox
+      ├── AdGuard
+      ├── Jellyfin
       └── Other LAN Devices
 ```
 
@@ -296,10 +276,8 @@ This allows secure remote access without exposing Proxmox or other homelab servi
 
 The same container can also be configured as a Tailscale exit node.
 
-Command:
-
 ```bash
-tailscale up --advertise-routes=192.168.1.0/24 --advertise-exit-node
+tailscale up --advertise-routes=<home-subnet> --advertise-exit-node
 ```
 
 ### Subnet Router
@@ -309,8 +287,6 @@ Used to access devices inside the home network.
 ### Exit Node
 
 Routes normal internet traffic through the home internet connection.
-
-Example:
 
 ```text
 Laptop Away From Home
@@ -324,8 +300,6 @@ Home Exit Node
         ▼
 Internet
 ```
-
-Websites would see the home's public IP while the exit node is being used.
 
 ---
 
@@ -393,15 +367,15 @@ tailscale ping <tailscale-ip>
 echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
 sysctl -p
 
-tailscale up --advertise-routes=192.168.1.0/24
+tailscale up --advertise-routes=<home-subnet>
 ```
 
 ### Proxmox Host Commands
 
 ```bash
-pct stop 102
-nano /etc/pve/lxc/102.conf
-pct start 102
+pct stop <CT-ID>
+nano /etc/pve/lxc/<CT-ID>.conf
+pct start <CT-ID>
 ```
 
 ---
@@ -438,6 +412,6 @@ Instead of opening Proxmox and other homelab services directly to the internet, 
 
 ## Result
 
-Successfully deployed Tailscale inside a Debian LXC container on Proxmox and configured the container to advertise the `192.168.1.0/24` home network.
+Successfully deployed Tailscale inside a Debian LXC container on Proxmox and configured the container as a subnet router.
 
-This provides a foundation for securely accessing homelab services remotely without directly exposing them to the public internet.
+This provides secure remote access to homelab services without directly exposing them to the public internet.
